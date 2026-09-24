@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agentkit — live demo</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #262b36;
+    --text: #e6e8ee; --muted: #9aa3b2;
+    --accent: #6ea8fe; --ok: #3fb950; --err: #f85149; --run: #d29922;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+         line-height: 1.5; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  header h1 { margin: 0 0 4px; font-size: 28px; }
+  header h1 .kit { color: var(--accent); }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  .notice { margin: 20px 0; padding: 12px 16px; font-size: 13.5px;
+            color: var(--text); background: var(--panel);
+            border: 1px solid var(--border); border-left: 3px solid var(--accent);
+            border-radius: 6px; }
+  .notice code { font-family: var(--mono); font-size: 12.5px;
+                 background: var(--bg); padding: 1px 6px; border-radius: 4px; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+              margin: 20px 0; }
+  button { background: var(--panel); color: var(--text);
+           border: 1px solid var(--border); border-radius: 6px;
+           padding: 9px 16px; font-size: 14px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent);
+                   color: #0b0d12; font-weight: 600; }
+  button.picked { border-color: var(--accent); color: var(--accent); }
+  #status { min-height: 22px; font-size: 13px; color: var(--muted); margin: 8px 0; }
+  #status.error { color: var(--err); }
+  .wave-label { margin: 26px 0 10px; font-size: 12px; color: var(--muted);
+                text-transform: uppercase; letter-spacing: .08em; }
+  .wave-label .n { color: var(--accent); font-weight: 600; }
+  .card { background: var(--panel); border: 1px solid var(--border);
+          border-radius: 8px; padding: 14px 16px; margin: 10px 0;
+          opacity: 0; transform: translateY(10px);
+          transition: opacity .35s ease, transform .35s ease; }
+  .card.show { opacity: 1; transform: none; }
+  .card .top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .card .id { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .card .title { font-weight: 600; font-size: 15px; }
+  .badge { font-size: 11px; font-weight: 700; text-transform: uppercase;
+           letter-spacing: .05em; padding: 2px 8px; border-radius: 20px; }
+  .badge.ok { color: #0b0d12; background: var(--ok); }
+  .badge.err { color: #0b0d12; background: var(--err); }
+  .badge.run { color: #0b0d12; background: var(--run); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  .card .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card pre { font-family: var(--mono); font-size: 12.5px; background: var(--bg);
+              border: 1px solid var(--border); border-radius: 6px;
+              padding: 10px 12px; overflow-x: auto; white-space: pre-wrap; }
+  .card .err-msg { color: var(--err); font-size: 13px; }
+  .deps { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .deps code { font-family: var(--mono); font-size: 11.5px; }
+  #report { margin-top: 36px; opacity: 0; transition: opacity .5s ease; }
+  #report.show { opacity: 1; }
+  #report h2 { font-size: 20px; border-bottom: 1px solid var(--border);
+               padding-bottom: 8px; }
+  #report h3 { font-size: 16px; margin: 22px 0 6px; }
+  #report h3 code { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  #report p.meta { color: var(--muted); font-size: 13px; }
+  #report pre { font-family: var(--mono); font-size: 12.5px; background: var(--panel);
+                border: 1px solid var(--border); border-radius: 6px;
+                padding: 10px 12px; overflow-x: auto; white-space: pre-wrap; }
+  #report code { font-family: var(--mono); font-size: 12.5px; }
+  #report blockquote { border-left: 3px solid var(--err); margin: 8px 0;
+                       padding: 4px 12px; color: var(--err); }
+  footer { margin-top: 48px; font-size: 12.5px; color: var(--muted); }
+  footer code { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>agent<span class="kit">kit</span> — live demo</h1>
+    <p>Watch a real agentkit run replay, wave by wave. No backend needed.</p>
+  </header>
+
+  <div class="notice">
+    <strong>Recorded demo run.</strong> EchoBackend is deterministic, so this is
+    byte-identical to a live run of the same spec. For live execution, run
+    <code>agentkit serve</code> locally and plug in your own model backend.
+  </div>
+
+  <div class="controls">
+    <button id="btn-audit" class="picked">Website audit</button>
+    <button id="btn-brief">Research brief</button>
+    <button id="btn-run" class="primary">▶ Run</button>
+  </div>
+  <div id="status">Pick an example, then hit Run.</div>
+
+  <div id="results"></div>
+
+  <div id="report"></div>
+
+  <footer>
+    Recorded with the real <code>Orchestrator</code> + <code>EchoBackend</code>
+    (see <code>docs/generate_runs.py</code>). Re-run it any time — the output
+    never changes.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+const EXAMPLES = {
+  "audit":  { file: "runs/website-audit.json",   label: "Website audit" },
+  "brief":  { file: "runs/research-brief.json",  label: "Research brief" }
+};
+let current = "audit";
+let running = false;
+
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* Topological layering: wave 0 = no deps, wave k = deps all in earlier waves. */
+function wavesOf(tasks) {
+  const byId = {};
+  const remaining = new Map();
+  for (const t of tasks) {
+    byId[t.id] = t;
+    remaining.set(t.id, new Set(t.depends_on || []));
+  }
+  const waves = [];
+  while (remaining.size > 0) {
+    const ready = [];
+    for (const [id, deps] of remaining) if (deps.size === 0) ready.push(id);
+    if (ready.length === 0) throw new Error("dependency cycle in recorded run");
+    waves.push(ready.map((id) => byId[id]));
+    for (const id of ready) remaining.delete(id);
+    for (const deps of remaining.values())
+      for (const id of ready) deps.delete(id);
+  }
+  return waves;
+}
+
+/* Tiny markdown renderer for the agentkit report format. */
+function renderMarkdown(md) {
+  const lines = md.split("\n");
+  let html = "", inCode = false, para = [];
+  const flushPara = () => {
+    if (para.length) {
+      html += "<p>" + para.map(inline).join(" ") + "</p>";
+      para = [];
+    }
+  };
+  const inline = (s) => {
+    let e = escapeHtml(s);
+    e = e.replace(/`([^`]+)`/g, "<code>$1</code>");
+    if (/^_.*_$/.test(e)) e = "<em>" + e.slice(1, -1) + "</em>";
+    return e;
+  };
+  for (const line of lines) {
+    if (line.trim().startsWith("```")) {
+      flushPara();
+      html += inCode ? "</pre>" : "<pre>";
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) { html += escapeHtml(line) + "\n"; continue; }
+    if (line.startsWith("## ")) { flushPara(); html += "<h3>" + inline(line.slice(3)) + "</h3>"; continue; }
+    if (line.startsWith("# "))  { flushPara(); html += "<h2>" + inline(line.slice(2)) + "</h2>"; continue; }
+    if (line.startsWith("> "))  { flushPara(); html += "<blockquote>" + inline(line.slice(2)) + "</blockquote>"; continue; }
+    if (line.trim() === "") { flushPara(); continue; }
+    if (/^_.*_$/.test(line.trim())) { flushPara(); html += '<p class="meta">' + inline(line.trim()) + "</p>"; continue; }
+    para.push(line.trim());
+  }
+  flushPara();
+  if (inCode) html += "</pre>";
+  return html;
+}
+
+function cardHtml(task, phase) {
+  const badge = phase === "running"
+    ? '<span class="badge run">running</span>'
+    : task.status === "ok"
+      ? '<span class="badge ok">ok</span>'
+      : '<span class="badge err">error</span>';
+  const body = phase === "running"
+    ? ""
+    : task.status === "ok"
+      ? "<pre>" + escapeHtml(task.output) + "</pre>"
+      : '<p class="err-msg">' + escapeHtml(task.error || "failed") + "</p>";
+  const deps = (task.depends_on && task.depends_on.length)
+    ? '<div class="deps">depends on ' + task.depends_on.map((d) => "<code>" + escapeHtml(d) + "</code>").join(", ") + "</div>"
+    : "";
+  return (
+    '<div class="top"><span class="id">' + escapeHtml(task.id) + "</span>" +
+    '<span class="title">' + escapeHtml(task.title) + "</span>" + badge + "</div>" +
+    '<div class="meta">' + task.attempts + " attempt" + (task.attempts === 1 ? "" : "s") + "</div>" +
+    body + deps
+  );
+}
+
+async function replay(run) {
+  const results = $("results");
+  const report = $("report");
+  results.innerHTML = "";
+  report.innerHTML = "";
+  report.classList.remove("show");
+
+  const waves = wavesOf(run.tasks);
+  $("status").textContent =
+    "Replaying " + run.spec_name + " — " + run.tasks.length +
+    " tasks in " + waves.length + " waves…";
+
+  for (let w = 0; w < waves.length; w++) {
+    const label = document.createElement("div");
+    label.className = "wave-label";
+    label.innerHTML = 'wave <span class="n">' + (w + 1) + "</span> — " +
+      (w === 0 ? "no dependencies, runs in parallel"
+               : "fan-in: waits for earlier waves");
+    results.appendChild(label);
+
+    // Stagger cards within a wave, like concurrent execution.
+    const reveals = waves[w].map(async (task, i) => {
+      await sleep(i * 220);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = cardHtml(task, "running");
+      results.appendChild(card);
+      requestAnimationFrame(() => card.classList.add("show"));
+      await sleep(650);
+      card.innerHTML = cardHtml(task, "done");
+    });
+    await Promise.all(reveals);
+  }
+
+  $("status").textContent = "Done — " + run.tasks.length + " tasks, all " +
+    (run.tasks.every((t) => t.status === "ok") ? "succeeded." : "finished.");
+  report.innerHTML = renderMarkdown(run.report_markdown);
+  report.classList.add("show");
+  report.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function runDemo() {
+  if (running) return;
+  running = true;
+  $("btn-run").disabled = true;
+  $("status").classList.remove("error");
+  try {
+    const res = await fetch(EXAMPLES[current].file);
+    if (!res.ok) throw new Error("could not load " + EXAMPLES[current].file);
+    const run = await res.json();
+    if (!run.tasks || !run.tasks.length) throw new Error("empty recorded run");
+    await replay(run);
+  } catch (err) {
+    $("status").textContent = "Demo failed to load: " + err.message;
+    $("status").classList.add("error");
+  } finally {
+    running = false;
+    $("btn-run").disabled = false;
+  }
+}
+
+function pick(name) {
+  if (running) return;
+  current = name;
+  $("btn-audit").classList.toggle("picked", name === "audit");
+  $("btn-brief").classList.toggle("picked", name === "brief");
+  $("results").innerHTML = "";
+  $("report").innerHTML = "";
+  $("report").classList.remove("show");
+  $("status").classList.remove("error");
+  $("status").textContent =
+    EXAMPLES[name].label + " selected (" + EXAMPLES[name].file +
+    ") — hit Run to replay it.";
+}
+
+$("btn-audit").addEventListener("click", () => pick("audit"));
+$("btn-brief").addEventListener("click", () => pick("brief"));
+$("btn-run").addEventListener("click", runDemo);
+</script>
+</body>
+</html>

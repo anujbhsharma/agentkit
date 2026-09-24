@@ -1,0 +1,49 @@
+{
+  "spec_name": "research-brief.md",
+  "tasks": [
+    {
+      "id": "collect-sources",
+      "title": "Collect sources",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:81a9b845] processed prompt (271 chars, 7 lines)",
+      "error": null,
+      "depends_on": []
+    },
+    {
+      "id": "extract-key-claims",
+      "title": "Extract key claims",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:6fb030dc] processed prompt (364 chars, 12 lines)",
+      "error": null,
+      "depends_on": [
+        "collect-sources"
+      ]
+    },
+    {
+      "id": "find-counterarguments",
+      "title": "Find counterarguments",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:34af3db6] processed prompt (335 chars, 11 lines)",
+      "error": null,
+      "depends_on": [
+        "collect-sources"
+      ]
+    },
+    {
+      "id": "draft-brief",
+      "title": "Draft brief",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:49aea414] processed prompt (428 chars, 14 lines)",
+      "error": null,
+      "depends_on": [
+        "extract-key-claims",
+        "find-counterarguments"
+      ]
+    }
+  ],
+  "report_markdown": "# agentkit run report\n\n_Tasks: 4, succeeded: 4, failed: 0_\n\n## Collect sources `collect-sources` \u2014 ok (1 attempt(s))\n\n```\n[echo:81a9b845] processed prompt (271 chars, 7 lines)\n```\n\n## Extract key claims `extract-key-claims` \u2014 ok (1 attempt(s))\n\n_Depends on: collect-sources_\n\n```\n[echo:6fb030dc] processed prompt (364 chars, 12 lines)\n```\n\n## Find counterarguments `find-counterarguments` \u2014 ok (1 attempt(s))\n\n_Depends on: collect-sources_\n\n```\n[echo:34af3db6] processed prompt (335 chars, 11 lines)\n```\n\n## Draft brief `draft-brief` \u2014 ok (1 attempt(s))\n\n_Depends on: extract-key-claims, find-counterarguments_\n\n```\n[echo:49aea414] processed prompt (428 chars, 14 lines)\n```\n"
+}

@@ -1,0 +1,61 @@
+{
+  "spec_name": "website-audit.md",
+  "tasks": [
+    {
+      "id": "crawl-sitemap",
+      "title": "Crawl sitemap",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:17a72d50] processed prompt (179 chars, 6 lines)",
+      "error": null,
+      "depends_on": []
+    },
+    {
+      "id": "lighthouse-audit",
+      "title": "Lighthouse audit",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:da0f4d57] processed prompt (338 chars, 11 lines)",
+      "error": null,
+      "depends_on": [
+        "crawl-sitemap"
+      ]
+    },
+    {
+      "id": "accessibility-check",
+      "title": "Accessibility check",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:7262584c] processed prompt (336 chars, 11 lines)",
+      "error": null,
+      "depends_on": [
+        "crawl-sitemap"
+      ]
+    },
+    {
+      "id": "security-headers-scan",
+      "title": "Security headers scan",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:ebbc2cbd] processed prompt (322 chars, 11 lines)",
+      "error": null,
+      "depends_on": [
+        "crawl-sitemap"
+      ]
+    },
+    {
+      "id": "write-summary",
+      "title": "Write summary",
+      "status": "ok",
+      "attempts": 1,
+      "output": "[echo:b7de7141] processed prompt (531 chars, 17 lines)",
+      "error": null,
+      "depends_on": [
+        "lighthouse-audit",
+        "accessibility-check",
+        "security-headers-scan"
+      ]
+    }
+  ],
+  "report_markdown": "# agentkit run report\n\n_Tasks: 5, succeeded: 5, failed: 0_\n\n## Crawl sitemap `crawl-sitemap` \u2014 ok (1 attempt(s))\n\n```\n[echo:17a72d50] processed prompt (179 chars, 6 lines)\n```\n\n## Lighthouse audit `lighthouse-audit` \u2014 ok (1 attempt(s))\n\n_Depends on: crawl-sitemap_\n\n```\n[echo:da0f4d57] processed prompt (338 chars, 11 lines)\n```\n\n## Accessibility check `accessibility-check` \u2014 ok (1 attempt(s))\n\n_Depends on: crawl-sitemap_\n\n```\n[echo:7262584c] processed prompt (336 chars, 11 lines)\n```\n\n## Security headers scan `security-headers-scan` \u2014 ok (1 attempt(s))\n\n_Depends on: crawl-sitemap_\n\n```\n[echo:ebbc2cbd] processed prompt (322 chars, 11 lines)\n```\n\n## Write summary `write-summary` \u2014 ok (1 attempt(s))\n\n_Depends on: lighthouse-audit, accessibility-check, security-headers-scan_\n\n```\n[echo:b7de7141] processed prompt (531 chars, 17 lines)\n```\n"
+}

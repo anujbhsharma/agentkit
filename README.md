@@ -1,5 +1,10 @@
 # agentkit
 
+**[▶ Live demo](https://anujbhsharma.github.io/agentkit/)** — watch a recorded
+agentkit run replay wave-by-wave, right in your browser. No install, no
+backend: EchoBackend is deterministic, so the replay is byte-identical to a
+live run.
+
 A small, sharp toolkit for orchestrating multi-agent workflows. You write a
 markdown spec, agentkit turns the headings into tasks, sorts them by
 dependency, fans the independent ones out across threads, feeds each task
