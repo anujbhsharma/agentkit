@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agentkit — spec runner</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #262b36;
+    --text: #e6e8ee; --muted: #9aa3b2;
+    --accent: #6ea8fe; --ok: #3fb950; --err: #f85149;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 system-ui, -apple-system, sans-serif; }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--border);
+           display: flex; align-items: baseline; gap: 12px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header h1 .kit { color: var(--accent); }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  main { display: grid; grid-template-columns: minmax(340px, 42%) 1fr;
+         gap: 0; height: calc(100vh - 61px); }
+  section { padding: 16px 20px; overflow-y: auto; }
+  #editor-pane { border-right: 1px solid var(--border); display: flex;
+                 flex-direction: column; gap: 10px; }
+  label { font-size: 12px; color: var(--muted); text-transform: uppercase;
+          letter-spacing: .06em; }
+  textarea { flex: 1; min-height: 320px; background: var(--panel);
+             color: var(--text); border: 1px solid var(--border);
+             border-radius: 8px; padding: 12px; font: 13px/1.55 var(--mono);
+             resize: vertical; }
+  textarea:focus { outline: 1px solid var(--accent); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button { background: var(--panel); color: var(--text);
+           border: 1px solid var(--border); border-radius: 8px;
+           padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent);
+                   color: #0b0d12; font-weight: 600; }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  input[type=number] { width: 70px; background: var(--panel); color: var(--text);
+                       border: 1px solid var(--border); border-radius: 8px;
+                       padding: 8px; font-size: 13px; }
+  .backend-note { font-size: 12.5px; color: var(--muted);
+                  background: var(--panel); border: 1px solid var(--border);
+                  border-radius: 8px; padding: 10px 12px; }
+  .backend-note strong { color: var(--text); }
+  .backend-note code { font-family: var(--mono); font-size: 12px; }
+  #status { min-height: 22px; font-size: 13px; color: var(--muted); }
+  #status.error { color: var(--err); }
+  .card { background: var(--panel); border: 1px solid var(--border);
+          border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+  .card .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .card .id { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .card .title { font-weight: 600; }
+  .badge { font-size: 11px; font-weight: 700; border-radius: 20px;
+            padding: 2px 10px; text-transform: uppercase; letter-spacing: .05em; }
+  .badge.ok { background: rgba(63,185,80,.15); color: var(--ok); }
+  .badge.error { background: rgba(248,81,73,.15); color: var(--err); }
+  .card .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card pre { background: var(--bg); border: 1px solid var(--border);
+              border-radius: 6px; padding: 10px; overflow-x: auto;
+              font: 12.5px/1.55 var(--mono); white-space: pre-wrap; }
+  .card .errtext { color: var(--err); font-family: var(--mono); font-size: 12.5px; }
+  #report { margin-top: 18px; }
+  #report h2 { font-size: 15px; border-bottom: 1px solid var(--border);
+               padding-bottom: 6px; }
+  .md h3 { font-size: 14px; margin: 14px 0 6px; }
+  .md p { margin: 6px 0; }
+  .md blockquote { border-left: 3px solid var(--border); margin: 8px 0;
+                   padding: 2px 12px; color: var(--muted); }
+  .md pre { background: var(--panel); border: 1px solid var(--border);
+            border-radius: 6px; padding: 10px; overflow-x: auto;
+            font: 12.5px/1.55 var(--mono); white-space: pre-wrap; }
+  .md code { font-family: var(--mono); font-size: 12.5px;
+             background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  .md ul { margin: 6px 0; padding-left: 22px; }
+  .md em { color: var(--muted); }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>agent<span class="kit">kit</span> <span style="font-weight:400">spec runner</span></h1>
+  <p>write a markdown spec, watch the agent swarm go</p>
+</header>
+<main>
+  <section id="editor-pane">
+    <label for="spec">Spec</label>
+    <div class="row" id="example-buttons"></div>
+    <textarea id="spec" spellcheck="false" placeholder="## My task&#10;Do the thing..."></textarea>
+    <div class="row">
+      <label for="workers">Workers</label>
+      <input type="number" id="workers" value="4" min="1" max="32">
+      <button class="primary" id="run">▶ Run</button>
+      <button id="clear">Clear results</button>
+    </div>
+    <div class="backend-note">
+      <strong>Backend: demo backend (EchoBackend).</strong>
+      Outputs below are deterministic fakes — no model is called, nothing
+      leaves your machine. Real model backends plug in via Python:
+      <code>run_spec("SPEC.md", my_backend)</code> — see the README's
+      "Bring your own model" section.
+    </div>
+  </section>
+  <section id="results-pane">
+    <div id="status">Pick an example or write a spec, then hit Run.</div>
+    <div id="cards"></div>
+    <div id="report"></div>
+  </section>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const specEl = $("spec"), workersEl = $("workers"),
+      runBtn = $("run"), statusEl = $("status"),
+      cardsEl = $("cards"), reportEl = $("report");
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// Tiny markdown renderer for the generated report: headings, code
+// fences, quotes, lists, inline code, emphasis. Good enough for agentkit.
+function renderMarkdown(md) {
+  const out = [];
+  const lines = md.split("\n");
+  let inCode = false, codeBuf = [], listBuf = [];
+  const flushList = () => {
+    if (listBuf.length) { out.push("<ul>" + listBuf.join("") + "</ul>"); listBuf = []; }
+  };
+  const inline = (t) => esc(t)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|\W)_([^_]+)_(\W|$)/g, "$1<em>$2</em>$3");
+  for (const line of lines) {
+    if (line.trimStart().startsWith("```")) {
+      if (inCode) { out.push("<pre>" + esc(codeBuf.join("\n")) + "</pre>"); codeBuf = []; }
+      inCode = !inCode; continue;
+    }
+    if (inCode) { codeBuf.push(line); continue; }
+    const t = line.trim();
+    if (t === "") { flushList(); continue; }
+    if (t.startsWith("## ")) { flushList(); out.push("<h3>" + inline(t.slice(3)) + "</h3>"); continue; }
+    if (t.startsWith("# "))  { flushList(); out.push("<h2>" + inline(t.slice(2)) + "</h2>"); continue; }
+    if (t.startsWith("> "))  { flushList(); out.push("<blockquote>" + inline(t.slice(2)) + "</blockquote>"); continue; }
+    if (/^[-*] /.test(t))    { listBuf.push("<li>" + inline(t.slice(2)) + "</li>"); continue; }
+    flushList();
+    out.push("<p>" + inline(t) + "</p>");
+  }
+  flushList();
+  return out.join("\n");
+}
+
+function renderCards(tasks) {
+  cardsEl.innerHTML = "";
+  for (const t of tasks) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const badge = `<span class="badge ${t.status}">${t.status}</span>`;
+    const deps = t.depends_on && t.depends_on.length
+      ? `<div class="meta">depends on: ${esc(t.depends_on.join(", "))}</div>` : "";
+    const body = t.status === "ok"
+      ? `<pre>${esc(t.output)}</pre>`
+      : `<div class="errtext">${esc(t.error || "unknown error")}</div>`;
+    card.innerHTML =
+      `<div class="head">${badge}<span class="title">${esc(t.title)}</span>` +
+      `<span class="id">${esc(t.id)}</span></div>` +
+      `<div class="meta">${t.attempts} attempt(s)</div>${deps}${body}`;
+    cardsEl.appendChild(card);
+  }
+}
+
+async function loadExamples() {
+  const box = $("example-buttons");
+  try {
+    const res = await fetch("/api/examples");
+    const data = await res.json();
+    const examples = data.examples || [];
+    examples.forEach((ex, i) => {
+      const b = document.createElement("button");
+      b.textContent = ex.name;
+      b.title = "Load " + ex.name + " into the editor";
+      b.addEventListener("click", () => { specEl.value = ex.content; });
+      box.appendChild(b);
+      if (i === 0 && !specEl.value.trim()) specEl.value = ex.content;
+    });
+    if (!examples.length) box.textContent = "no examples found";
+  } catch (e) {
+    box.textContent = "could not load examples";
+  }
+}
+
+runBtn.addEventListener("click", async () => {
+  const spec = specEl.value;
+  const workers = parseInt(workersEl.value, 10) || 4;
+  runBtn.disabled = true;
+  statusEl.className = "";
+  statusEl.textContent = "Running… tasks fan out as dependencies clear.";
+  cardsEl.innerHTML = ""; reportEl.innerHTML = "";
+  try {
+    const res = await fetch("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spec, workers }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      statusEl.className = "error";
+      statusEl.textContent = "Error: " + (data.error || ("HTTP " + res.status));
+      return;
+    }
+    const ok = data.tasks.filter(t => t.status === "ok").length;
+    statusEl.textContent =
+      `Done: ${ok}/${data.tasks.length} task(s) ok (demo backend).`;
+    renderCards(data.tasks);
+    reportEl.innerHTML = "<h2>Report</h2><div class='md'>" +
+      renderMarkdown(data.report_markdown || "") + "</div>";
+  } catch (e) {
+    statusEl.className = "error";
+    statusEl.textContent = "Request failed: " + e.message;
+  } finally {
+    runBtn.disabled = false;
+  }
+});
+
+$("clear").addEventListener("click", () => {
+  cardsEl.innerHTML = ""; reportEl.innerHTML = "";
+  statusEl.className = ""; statusEl.textContent = "Results cleared.";
+});
+
+loadExamples();
+</script>
+</body>
+</html>

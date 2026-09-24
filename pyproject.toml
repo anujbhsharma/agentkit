@@ -20,3 +20,6 @@ agentkit = "agentkit.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["agentkit*"]
+
+[tool.setuptools.package-data]
+agentkit = ["static/*.html"]

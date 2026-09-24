@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .backends import EchoBackend
 from .runner import run_spec
+from .server import serve
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,6 +30,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--out",
         default="report.md",
         help="Where to write the markdown report (default: report.md).",
+    )
+
+    serve_p = sub.add_parser("serve", help="Start the web UI.")
+    serve_p.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to listen on (default: 8000).",
     )
     return parser
 
@@ -56,6 +65,10 @@ def main(argv: list[str] | None = None) -> int:
             mark = "ok" if result.ok else "FAIL"
             print(f"  [{mark}] {task.id} ({result.attempts} attempt(s))")
         return 0 if report.succeeded else 1
+
+    if args.command == "serve":
+        serve(port=args.port)
+        return 0
 
     return 2  # unreachable with required subparsers
 

@@ -82,6 +82,45 @@ run_spec("SPEC.md", backend=claude_backend)
 Works the same with OpenAI, a local Ollama server, or a stub in your
 tests — raise on errors and agentkit's retries do the rest.
 
+## Web UI
+
+Specs are more fun in a browser. One command, zero dependencies beyond
+the standard library:
+
+```bash
+agentkit serve            # http://127.0.0.1:8000
+agentkit serve --port 9000
+```
+
+What you get:
+
+- **Spec editor** (left) — write markdown, or load either bundled example
+  with one click. Set the worker count, hit Run.
+- **Task cards** (right) — every task rendered in dependency order with
+  its status, attempt count, and output.
+- **Report** — the same `report.md` the CLI writes, rendered readably
+  right under the cards.
+
+The UI runs on the **demo backend (EchoBackend)**: deterministic fake
+outputs, no network, no cost, nothing leaves your machine. It's a
+playground for specs and dependency graphs — point real model backends
+at it via the Python API when you're ready to spend tokens.
+
+Prefer JSON? The UI is just a thin client over a tiny API:
+
+```bash
+# list the bundled example specs
+curl http://127.0.0.1:8000/api/examples
+
+# run a spec; returns {tasks: [...], report_markdown: "..."}
+curl -X POST http://127.0.0.1:8000/api/run \
+  -H 'Content-Type: application/json' \
+  -d '{"spec": "## Hello\nSay hi.", "workers": 2}'
+```
+
+Errors come back as clean JSON (`{"error": "..."}`) with 4xx/500 status
+codes — tracebacks never reach the client.
+
 ## The spec format
 
 ```markdown
